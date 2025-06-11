@@ -1,0 +1,21 @@
+---
+- hosts: all
+  tasks:
+
+  - name: sshd configuration file update
+    blockinfile:
+      path: /etc/ssh/sshd_config
+      insertbefore: BOF # Beginning of the file
+      marker: "# {mark} ANSIBLE MANAGED BLOCK BY LINUX-ADMIN"
+      block: |
+        PermitRootLogin no
+        PubkeyAuthentication yes
+        AuthorizedKeysFile .ssh/authorized_keys
+        PasswordAuthentication no
+      backup: yes
+      validate: /usr/sbin/sshd -T -f %s
+
+  - name: Restart SSHD
+    service:
+      name: sshd
+      state: restarted
