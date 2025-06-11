@@ -1,0 +1,38 @@
+---
+- name: Update and Upgrade Debian Servers
+  hosts: all
+  gather_facts: yes
+  become: yes
+
+  tasks:
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 86400
+
+    - name: Upgrade packages
+      apt:
+        upgrade: yes
+
+    - name: Remove dependencies that are no longer required.
+      ansible.builtin.apt:
+        autoremove: yes
+
+    - name: Check if a reboot is required.
+      ansible.builtin.stat:
+        path: /var/run/reboot-required
+        get_checksum: no
+      register: reboot_required_file
+
+    - name: Schedule reboot at 02:00 if not a host machine
+      ansible.builtin.command: sudo shutdown -r 02:00
+      when:
+        (reboot_required_file.stat.exists) and
+        (inventory_hostname not in groups[pve_hosts])
+
+    - name: Schedule reboot at 04:00 if not a guest machine
+      ansible.builtin.command: sudo shutdown -r 04:00
+      when:
+        (reboot_required_file.stat.exists) and
+        (inventory_hostname in groups[pve_hosts])
